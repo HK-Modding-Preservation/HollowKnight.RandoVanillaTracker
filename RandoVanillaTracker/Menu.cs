@@ -46,7 +46,7 @@ namespace RandoVanillaTracker
             rvtPageTitle = new MenuLabel(rvtPage, "Select vanilla pools to track", MenuLabel.Style.Title);
             rvtPageTitle.MoveTo(new Vector2(0, 400));
             rvtMEF = new(rvtPage, RandoVanillaTracker.GS);
-            rvtVIP = new(rvtPage, new Vector2(0, 300), 4, 50f, 400f, false, rvtMEF.Elements);
+            rvtVIP = new(rvtPage, new Vector2(0, 300), 4, 50f, 400f, true, rvtMEF.Elements);
             Localize(rvtMEF);
         }
     }

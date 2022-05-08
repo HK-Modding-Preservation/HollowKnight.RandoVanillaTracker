@@ -5,7 +5,7 @@ namespace RandoVanillaTracker
     public class RandoVanillaTracker : Mod, IGlobalSettings<GlobalSettings>
     {
         public static RandoVanillaTracker Instance;
-        public override string GetVersion() => "1.0.0";
+        public override string GetVersion() => "1.0.1";
 
         public static GlobalSettings GS = new();
         public void OnLoadGlobal(GlobalSettings gs) => GS = gs;

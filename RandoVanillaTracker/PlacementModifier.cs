@@ -5,14 +5,15 @@ using RandomizerMod.RandomizerData;
 using RandomizerMod.RC;
 using System;
 using System.Collections.Generic;
-using RandoController = RandomizerMod.RC.RandoController;
-using Randomizer = RandomizerCore.Randomization.Randomizer;
+using RC = RandomizerMod.RC.RandoController;
+using Rand = RandomizerCore.Randomization.Randomizer;
+using RVT = RandoVanillaTracker.RandoVanillaTracker;
 
 namespace RandoVanillaTracker
 {
     internal class PlacementModifier
     {
-        private static RandoController rc;
+        private static RC rc;
 
         private static Hook ControllerRunHook;
         private static Hook RandomizerRunHook;
@@ -28,14 +29,14 @@ namespace RandoVanillaTracker
             RandomizerRunHook = new Hook(RandomizerRun.GetMethod("Run"), typeof(PlacementModifier).GetMethod(nameof(OnRandomizerRun)));
         }
 
-        public static void OnControllerRun(Action<RandoController> orig, RandoController self)
+        public static void OnControllerRun(Action<RC> orig, RC self)
         {
             rc = self;
 
             orig(self);
         }
 
-        public static List<List<RandoPlacement>[]> OnRandomizerRun(Func<Randomizer, List<List<RandoPlacement>[]>> orig, Randomizer self)
+        public static List<List<RandoPlacement>[]> OnRandomizerRun(Func<Rand, List<List<RandoPlacement>[]>> orig, Rand self)
         {
             return AddVanillaPlacements(orig(self));
         }
@@ -48,7 +49,7 @@ namespace RandoVanillaTracker
             foreach (PoolDef pool in Data.Pools)
             {
                 if (!rc.gs.PoolSettings.GetFieldByName(pool.Path.Replace("PoolSettings.", ""))
-                    && RandoVanillaTracker.GS.GetFieldByName(pool.Path.Replace("PoolSettings.", "")))
+                    && RVT.GS.GetFieldByName(pool.Path.Replace("PoolSettings.", "")))
                 {
                     foreach (string item in pool.IncludeItems)
                     {
@@ -105,6 +106,14 @@ namespace RandoVanillaTracker
             stagedPlacements.Add(new List<RandoPlacement>[] { newPlacements });
 
             rc.ctx.Vanilla.RemoveAll(p => ItemsToConvert.Contains(p.Item.Name));
+
+            foreach (InteropInfo interop in RVT.Instance.Interops.Values)
+            {
+                if (!interop.RandomizePool.Invoke() && (bool)interop.TrackPool.GetValue(interop.TrackPoolObj))
+                {
+                    stagedPlacements.Add(new List<RandoPlacement>[] { interop.GetPlacements.Invoke() });
+                }
+            }
 
             return stagedPlacements;
         }

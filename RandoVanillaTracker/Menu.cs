@@ -1,10 +1,13 @@
 ﻿using MenuChanger;
+using MenuChanger.Extensions;
 using MenuChanger.MenuElements;
 using MenuChanger.MenuPanels;
-using MenuChanger.Extensions;
 using RandomizerMod.Menu;
-using static RandomizerMod.Localization;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using static RandomizerMod.Localization;
+using RVT = RandoVanillaTracker.RandoVanillaTracker;
 
 namespace RandoVanillaTracker
 {
@@ -14,8 +17,9 @@ namespace RandoVanillaTracker
         internal MenuPage rvtPage;
         internal MenuLabel rvtPageTitle;
         internal MenuElementFactory<GlobalSettings> rvtMEF;
-        internal GridItemPanel rvtVIP;
+        internal GridItemPanel rvtGIP;
 
+        internal List<ToggleButton> rvtInteropButtons;
         internal SmallButton JumpToRVTButton;
 
         private static Menu _instance = null;
@@ -42,12 +46,27 @@ namespace RandoVanillaTracker
 
         private void ConstructMenu(MenuPage landingPage)
         {
+            ConstructInteropButtons();
+
             rvtPage = new MenuPage(Localize("RandoVanillaTracker"), landingPage);
             rvtPageTitle = new MenuLabel(rvtPage, "Select vanilla pools to track", MenuLabel.Style.Title);
             rvtPageTitle.MoveTo(new Vector2(0, 400));
-            rvtMEF = new(rvtPage, RandoVanillaTracker.GS);
-            rvtVIP = new(rvtPage, new Vector2(0, 300), 4, 50f, 400f, true, rvtMEF.Elements);
+            rvtMEF = new(rvtPage, RVT.GS);
+            rvtGIP = new(rvtPage, new Vector2(0, 300), 4, 50f, 400f, true, rvtMEF.Elements.Concat(rvtInteropButtons).ToArray());
             Localize(rvtMEF);
+        }
+
+        private void ConstructInteropButtons()
+        {
+            rvtInteropButtons = new();
+
+            foreach (InteropInfo info in RVT.Instance.Interops.Values)
+            {
+                ToggleButton button = new(rvtPage, info.TrackPool.GetMenuName());
+                button.Bind(info.TrackPoolObj, info.TrackPool);
+
+                rvtInteropButtons.Add(button);
+            }
         }
     }
 }

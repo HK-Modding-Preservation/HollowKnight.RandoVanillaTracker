@@ -35,6 +35,7 @@ namespace RandoVanillaTracker
 
         private static Dictionary<string, FieldInfo> fields = typeof(GlobalSettings)
             .GetFields(BindingFlags.Public | BindingFlags.Instance)
+            .Where(f => f.GetType() == typeof(bool))
             .ToDictionary(f => f.Name, f => f);
 
         public bool GetFieldByName(string fieldName)
@@ -45,5 +46,7 @@ namespace RandoVanillaTracker
             }
             return false;
         }
+        
+        public Dictionary<string, bool> trackInteropPool = new();
     }
 }

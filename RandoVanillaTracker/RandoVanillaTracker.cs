@@ -29,17 +29,14 @@ namespace RandoVanillaTracker
 
         /// <summary>
         /// Pass interop information to RandoVanillaTracker. Needs to be called once before the Randomizer Connections menu is entered for the first time.
-        /// TrackPool should correspond to a bool in GlobalSettings (or equivalent)
         /// </summary>
-        public static void AddInterop(string pool, Func<bool> RandomizePool, FieldInfo TrackPool, object TrackPoolObj, Func<List<RandoPlacement>> GetPlacements)
+        public static void AddInterop(string pool, Func<bool> RandomizePool, Func<List<RandoPlacement>> GetPlacements)
         {
             if (Instance.Interops.ContainsKey(pool)) return;
 
             Instance.Interops.Add(pool, new()
             {
                 RandomizePool = RandomizePool,
-                TrackPool = TrackPool,
-                TrackPoolObj = TrackPoolObj,
                 GetPlacements = GetPlacements
             });
         }
@@ -48,8 +45,6 @@ namespace RandoVanillaTracker
     internal class InteropInfo
     {
         public Func<bool> RandomizePool;
-        public FieldInfo TrackPool;
-        public object TrackPoolObj;
         public Func<List<RandoPlacement>> GetPlacements;
     }
 }

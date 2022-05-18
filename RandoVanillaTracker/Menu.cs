@@ -2,9 +2,7 @@
 using MenuChanger.Extensions;
 using MenuChanger.MenuElements;
 using MenuChanger.MenuPanels;
-using RandomizerCore;
 using RandomizerMod.Menu;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -48,12 +46,11 @@ namespace RandoVanillaTracker
 
         private void ConstructMenu(MenuPage landingPage)
         {
-            ConstructInteropButtons();
-
             rvtPage = new MenuPage(Localize("RandoVanillaTracker"), landingPage);
             rvtPageTitle = new MenuLabel(rvtPage, "Select vanilla placements to track", MenuLabel.Style.Title);
             rvtPageTitle.MoveTo(new Vector2(0, 400));
             rvtMEF = new(rvtPage, RVT.GS);
+            ConstructInteropButtons();
             rvtGIP = new(rvtPage, new Vector2(0, 300), 4, 50f, 400f, true, rvtMEF.Elements.Concat(rvtInteropButtons).ToArray());
             Localize(rvtMEF);
         }

@@ -36,7 +36,7 @@ namespace RandoVanillaTracker
         /// <summary>
         /// Pass interop information to RandoVanillaTracker. Needs to be called once before the Randomizer Connections menu is entered for the first time.
         /// </summary>
-        public static void AddInterop(string pool, Func<bool> RandomizePool, Func<List<VanillaDef>> GetPlacements)
+        public static void AddInterop(string pool, Func<List<VanillaDef>> GetPlacements)
         {
             if (Instance.Interops.ContainsKey(pool)) return;
 
@@ -52,7 +52,7 @@ namespace RandoVanillaTracker
     [ModExportName(nameof(RandoVanillaTracker))]
     public static class RVTExport
     {
-        public static void AddInterop(string pool, Func<bool> RandomizePool, Func<List<VanillaDef>> GetPlacements)
-            => RandoVanillaTracker.AddInterop(pool, RandomizePool, GetPlacements);
+        public static void AddInterop(string pool, Func<List<VanillaDef>> GetPlacements)
+            => RandoVanillaTracker.AddInterop(pool, GetPlacements);
     }
 }

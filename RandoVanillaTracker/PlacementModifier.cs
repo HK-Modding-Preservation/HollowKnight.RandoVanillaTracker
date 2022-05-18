@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Rand = RandomizerCore.Randomization.Randomizer;
 using RC = RandomizerMod.RC.RandoController;
+using RP = RandomizerCore.RandoPlacement;
 using RVT = RandoVanillaTracker.RandoVanillaTracker;
 
 namespace RandoVanillaTracker
@@ -41,21 +42,21 @@ namespace RandoVanillaTracker
             orig(self);
         }
 
-        public static List<List<RandoPlacement>[]> OnRandomizerRun(Func<Rand, List<List<RandoPlacement>[]>> orig, Rand self)
+        public static List<List<RP>[]> OnRandomizerRun(Func<Rand, List<List<RP>[]>> orig, Rand self)
         {
             return AddVanillaPlacements(orig(self));
         }
 
-        public static List<List<RandoPlacement>[]> AddVanillaPlacements(List<List<RandoPlacement>[]> stagedPlacements)
+        public static List<List<RP>[]> AddVanillaPlacements(List<List<RP>[]> stagedPlacements)
         {
             items = new();
             locations = new();
 
-            foreach (List<RandoPlacement>[] rpll in stagedPlacements)
+            foreach (List<RP>[] rpll in stagedPlacements)
             {
-                foreach (List<RandoPlacement> rpl in rpll)
+                foreach (List<RP> rpl in rpll)
                 {
-                    foreach (RandoPlacement rp in rpl)
+                    foreach (RP rp in rpl)
                     {
                         if (!items.Contains(rp.Item.Name))
                         {
@@ -70,13 +71,13 @@ namespace RandoVanillaTracker
                 }
             }
 
-            List<RandoPlacement> newPlacements = new();
+            List<RP> newPlacements = new();
 
             foreach (PoolDef pool in Data.Pools)
             {
                 if (RVT.GS.GetFieldByName(pool.Path.Replace("PoolSettings.", "")))
                 {
-                    TryMakeItemPlacements(pool.Vanilla, out List<RandoPlacement> placements);
+                    TryMakeItemPlacements(pool.Vanilla, out List<RP> placements);
 
                     newPlacements.AddRange(placements);
                 }
@@ -84,7 +85,7 @@ namespace RandoVanillaTracker
 
             if (RVT.GS.Transitions)
             {
-                TryMakeTransitionPlacements(Data.GetRoomTransitionNames(), out List<RandoPlacement> placements);
+                TryMakeTransitionPlacements(Data.GetRoomTransitionNames(), out List<RP> placements);
 
                 newPlacements.AddRange(placements);
             }
@@ -93,7 +94,7 @@ namespace RandoVanillaTracker
             {
                 if (RVT.GS.trackInteropPool[kvp.Key])
                 {
-                    TryMakeItemPlacements(kvp.Value.Invoke().ToArray(), out List<RandoPlacement> placements);
+                    TryMakeItemPlacements(kvp.Value.Invoke().ToArray(), out List<RP> placements);
 
                     newPlacements.AddRange(placements);
                 }
@@ -101,17 +102,20 @@ namespace RandoVanillaTracker
 
             rc.ctx.Vanilla.RemoveAll(gp => newPlacements.Any(np => gp.Item.Name == np.Item.Name));
 
-            stagedPlacements.Add(new List<RandoPlacement>[] { newPlacements });
+            stagedPlacements.Add(new List<RP>[] { newPlacements });
 
             return stagedPlacements;
         }
 
-        private static void TryMakeItemPlacements(VanillaDef[] defs, out List<RandoPlacement> placements)
+        private static void TryMakeItemPlacements(VanillaDef[] defs, out List<RP> placements)
         {
             placements = new();
 
             foreach (VanillaDef vd in defs)
             {
+                if ((rc.gs.PoolSettings.Charms || rc.gs.PoolSettings.GrimmkinFlames)
+                    && ConditionalGrimmkinFlames.Contains(vd.Location)) continue;
+
                 if (!items.Contains(vd.Item) && !ShopNames.Contains(vd.Location))
                 {
                     placements.Add(MakeItemPlacement(vd));
@@ -119,7 +123,7 @@ namespace RandoVanillaTracker
             }
         }
 
-        private static RandoPlacement MakeItemPlacement(VanillaDef def)
+        private static RP MakeItemPlacement(VanillaDef def)
         {
             if (!rc.rb.TryGetItemDef(def.Item, out ItemDef id))
             {
@@ -172,6 +176,16 @@ namespace RandoVanillaTracker
             return new(item, location);
         }
 
+        private static readonly HashSet<string> ConditionalGrimmkinFlames = new()
+        {
+            "Grimmkin_Flame-City_Storerooms",
+            "Grimmkin_Flame-Greenpath",
+            "Grimmkin_Flame-Crystal_Peak",
+            "Grimmkin_Flame-King's_Pass",
+            "Grimmkin_Flame-Resting_Grounds",
+            "Grimmkin_Flame-Kingdom's_Edge"
+        };
+
         private static readonly HashSet<string> ShopNames = new()
         {
             "Sly",
@@ -185,7 +199,7 @@ namespace RandoVanillaTracker
             "Egg_Shop"
         };
 
-        private static void TryMakeTransitionPlacements(IEnumerable<string> transitions, out List<RandoPlacement> placements)
+        private static void TryMakeTransitionPlacements(IEnumerable<string> transitions, out List<RP> placements)
         {
             placements = new();
 
@@ -201,7 +215,7 @@ namespace RandoVanillaTracker
             }
         }
 
-        private static RandoPlacement MakeTransitionPlacement(TransitionDef sourceDef)
+        private static RP MakeTransitionPlacement(TransitionDef sourceDef)
         {
             RandoModTransition source = new(Lm.GetTransition(sourceDef.Name));
             source.TransitionDef = sourceDef;

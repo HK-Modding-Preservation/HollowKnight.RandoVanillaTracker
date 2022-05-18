@@ -121,16 +121,26 @@ namespace RandoVanillaTracker
 
         private static RandoPlacement MakeItemPlacement(VanillaDef def)
         {
+            if (!rc.rb.TryGetItemDef(def.Item, out ItemDef id))
+            {
+                id = Data.GetItemDef(def.Item);
+            }
+
             RandoModItem item = new()
             {
                 item = Lm.GetItem(def.Item),
-                ItemDef = Data.GetItemDef(def.Item)
+                ItemDef = id
             };
+
+            if (!rc.rb.TryGetLocationDef(def.Location, out LocationDef ld))
+            {
+                ld = Data.GetLocationDef(def.Location);
+            }
 
             RandoModLocation location = new()
             {
                 logic = Lm.GetLogicDef(def.Location),
-                LocationDef = Data.GetLocationDef(def.Location)
+                LocationDef = ld
             };
 
             void ApplyCost(CostDef cost)

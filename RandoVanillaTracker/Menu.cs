@@ -2,7 +2,9 @@
 using MenuChanger.Extensions;
 using MenuChanger.MenuElements;
 using MenuChanger.MenuPanels;
+using RandomizerCore;
 using RandomizerMod.Menu;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -49,7 +51,7 @@ namespace RandoVanillaTracker
             ConstructInteropButtons();
 
             rvtPage = new MenuPage(Localize("RandoVanillaTracker"), landingPage);
-            rvtPageTitle = new MenuLabel(rvtPage, "Select vanilla pools to track", MenuLabel.Style.Title);
+            rvtPageTitle = new MenuLabel(rvtPage, "Select vanilla placements to track", MenuLabel.Style.Title);
             rvtPageTitle.MoveTo(new Vector2(0, 400));
             rvtMEF = new(rvtPage, RVT.GS);
             rvtGIP = new(rvtPage, new Vector2(0, 300), 4, 50f, 400f, true, rvtMEF.Elements.Concat(rvtInteropButtons).ToArray());
@@ -60,11 +62,11 @@ namespace RandoVanillaTracker
         {
             rvtInteropButtons = new();
 
-            foreach (KeyValuePair<string InteropInfo> kvp in RVT.Instance.Interops)
+            foreach (string pool in RVT.Instance.Interops.Keys)
             {
-                ToggleButton button = new(rvtPage, kvp.Key);
-                button.SetValue(RVT.GS.trackInteropPool[kvp.Key]);
-                button.SelfChanged += b => RVT.GS.trackInteropPool[kvp.Key] = (bool)b.Value;
+                ToggleButton button = new(rvtPage, pool);
+                button.SetValue(RVT.GS.trackInteropPool[pool]);
+                button.SelfChanged += b => RVT.GS.trackInteropPool[pool] = (bool)b.Value;
 
                 rvtInteropButtons.Add(button);
             }

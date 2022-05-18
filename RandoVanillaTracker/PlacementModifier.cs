@@ -4,10 +4,10 @@ using RandomizerCore.Logic;
 using RandomizerMod.RandomizerData;
 using RandomizerMod.RC;
 using System;
-using System.Linq;
 using System.Collections.Generic;
-using RC = RandomizerMod.RC.RandoController;
+using System.Linq;
 using Rand = RandomizerCore.Randomization.Randomizer;
+using RC = RandomizerMod.RC.RandoController;
 using RVT = RandoVanillaTracker.RandoVanillaTracker;
 
 namespace RandoVanillaTracker
@@ -15,6 +15,10 @@ namespace RandoVanillaTracker
     internal class PlacementModifier
     {
         private static RC rc;
+        private static LogicManager Lm => rc.ctx.LM;
+
+        private static HashSet<string> items = new();
+        private static HashSet<string> locations = new();
 
         private static Hook ControllerRunHook;
         private static Hook RandomizerRunHook;
@@ -44,83 +48,118 @@ namespace RandoVanillaTracker
 
         public static List<List<RandoPlacement>[]> AddVanillaPlacements(List<List<RandoPlacement>[]> stagedPlacements)
         {
-            HashSet<string> ItemsToConvert = new();
+            items = new();
+            locations = new();
+
+            foreach (List<RandoPlacement>[] rpll in stagedPlacements)
+            {
+                foreach (List<RandoPlacement> rpl in rpll)
+                {
+                    foreach (RandoPlacement rp in rpl)
+                    {
+                        if (!items.Contains(rp.Item.Name))
+                        {
+                            items.Add(rp.Item.Name);
+                        }
+
+                        if (!locations.Contains(rp.Location.Name))
+                        {
+                            locations.Add(rp.Location.Name);
+                        }
+                    }
+                }
+            }
+
             List<RandoPlacement> newPlacements = new();
 
             foreach (PoolDef pool in Data.Pools)
             {
-                if (!rc.gs.PoolSettings.GetFieldByName(pool.Path.Replace("PoolSettings.", ""))
-                    && RVT.GS.GetFieldByName(pool.Path.Replace("PoolSettings.", "")))
+                if (RVT.GS.GetFieldByName(pool.Path.Replace("PoolSettings.", "")))
                 {
-                    foreach (string item in pool.IncludeItems)
-                    {
-                        ItemsToConvert.Add(item);
-                    }
+                    TryMakeItemPlacements(pool.Vanilla, out List<RandoPlacement> placements);
+
+                    newPlacements.AddRange(placements);
                 }
             }
 
-            foreach (GeneralizedPlacement p in rc.ctx.Vanilla)
+            if (RVT.GS.Transitions)
             {
-                // Ignore shop placements
-                if (ItemsToConvert.Contains(p.Item.Name) && !ShopNames.Contains(p.Location.Name))
+                TryMakeTransitionPlacements(Data.GetRoomTransitionNames(), out List<RandoPlacement> placements);
+
+                newPlacements.AddRange(placements);
+            }
+
+            foreach (KeyValuePair<string, Func<List<RandoPlacement>>> kvp in RVT.Instance.Interops)
+            {
+                if (RVT.GS.trackInteropPool[kvp.Key])
                 {
-                    // More or less copied from homothety's RandomizerMod RandoFactory
-                    RandoModItem item = new()
-                    {
-                        item = rc.ctx.LM.GetItem(p.Item.Name),
-                        ItemDef = Data.GetItemDef(p.Item.Name)
-                    };
+                    List<RandoPlacement> placements = new(kvp.Value.Invoke().Where(p => !ShopNames.Contains(p.Location.Name)));
 
-                    RandoModLocation rl = new()
-                    {
-                        logic = rc.ctx.LM.GetLogicDef(p.Location.Name),
-                        LocationDef = Data.GetLocationDef(p.Location.Name)
-                    };
-
-                    // Given that shops have been filtered out, some of the following is probably redundant
-                    if (Data.TryGetCost(p.Location.Name, out CostDef def))
-                    {
-                        switch (def.Term)
-                        {
-                            case "ESSENCE":
-                            case "GRUBS":
-                                break;
-                            case "SIMPLE":
-                                rl.AddCost(new SimpleCost(rc.ctx.LM.GetTerm("SIMPLE"), 1));
-                                break;
-                            case "Spore_Shroom":
-                                rl.AddCost(new SimpleCost(rc.ctx.LM.GetTerm("Spore_Shroom"), 1));
-                                break;
-                            case "GEO":
-                                rl.AddCost(new LogicGeoCost(rc.ctx.LM, def.Amount));
-                                break;
-                            default:
-                                rl.AddCost(new SimpleCost(rc.ctx.LM.GetTerm(def.Term), def.Amount));
-                                break;
-                        }
-                    }
-
-                    newPlacements.Add(new(item, rl));
+                    newPlacements.AddRange(placements);
                 }
             }
+
+            rc.ctx.Vanilla.RemoveAll(gp => newPlacements.Any(np => gp.Item.Name == np.Item.Name));
 
             stagedPlacements.Add(new List<RandoPlacement>[] { newPlacements });
 
-            rc.ctx.Vanilla.RemoveAll(p => ItemsToConvert.Contains(p.Item.Name));
+            return stagedPlacements;
+        }
 
-            foreach (KeyValuePair<string, InteropInfo> kvp in RVT.Instance.Interops)
+        private static void TryMakeItemPlacements(VanillaDef[] defs, out List<RandoPlacement> placements)
+        {
+            placements = new();
+
+            foreach (VanillaDef vd in defs)
             {
-                if (!kvp.Value.RandomizePool.Invoke() && RVT.GS.trackInteropPool[kvp.Key])
+                if (!items.Contains(vd.Item) && !ShopNames.Contains(vd.Location))
                 {
-                    List<RandoPlacement> placements = kvp.Value.GetPlacements.Invoke().Where(p => !ShopNames.Contains(p.Location.Name));
-                    
-                    rc.ctx.Vanilla.RemoveAll(p1 => placements.Any(p2 => p1.Location.Name == p2.Location.Name && p1.Item.Name == p2.Item.Name));
-                    
-                    stagedPlacements.Add(new List<RandoPlacement>[] { placements });
+                    placements.Add(MakeItemPlacement(vd));
+                }
+            }
+        }
+
+        private static RandoPlacement MakeItemPlacement(VanillaDef def)
+        {
+            RandoModItem item = new()
+            {
+                item = Lm.GetItem(def.Item),
+                ItemDef = Data.GetItemDef(def.Item)
+            };
+
+            RandoModLocation location = new()
+            {
+                logic = Lm.GetLogicDef(def.Location),
+                LocationDef = Data.GetLocationDef(def.Location)
+            };
+
+            void ApplyCost(CostDef cost)
+            {
+                switch (cost.Term)
+                {
+                    case "GEO":
+                        location.AddCost(new LogicGeoCost(Lm, cost.Amount));
+                        break;
+                    default:
+                        location.AddCost(new SimpleCost(Lm.GetTerm(cost.Term), cost.Amount));
+                        break;
                 }
             }
 
-            return stagedPlacements;
+            if (Data.TryGetCost(def.Location, out CostDef baseCost))
+            {
+                ApplyCost(baseCost);
+            }
+
+            if (def.Costs != null)
+            {
+                foreach (CostDef cost in def.Costs)
+                {
+                    ApplyCost(cost);
+                }
+            }
+
+            return new(item, location);
         }
 
         private static readonly HashSet<string> ShopNames = new()
@@ -136,6 +175,32 @@ namespace RandoVanillaTracker
             "Egg_Shop"
         };
 
-        
+        private static void TryMakeTransitionPlacements(IEnumerable<string> transitions, out List<RandoPlacement> placements)
+        {
+            placements = new();
+
+            foreach (string source in transitions)
+            {
+                TransitionDef sourceDef = Data.GetTransitionDef(source);
+
+                if (sourceDef.VanillaTarget != null && Lm.TransitionLookup.ContainsKey(source)
+                    && !locations.Contains(source) && !items.Contains(sourceDef.VanillaTarget))
+                {
+                    placements.Add(MakeTransitionPlacement(sourceDef));
+                }
+            }
+        }
+
+        private static RandoPlacement MakeTransitionPlacement(TransitionDef sourceDef)
+        {
+            RandoModTransition source = new(Lm.GetTransition(sourceDef.Name));
+            source.TransitionDef = sourceDef;
+
+            RandoModTransition target = new(Lm.GetTransition(sourceDef.VanillaTarget));
+            target.TransitionDef = Data.GetTransitionDef(sourceDef.VanillaTarget);
+
+            return new(target, source);
+        }
+
     }
 }

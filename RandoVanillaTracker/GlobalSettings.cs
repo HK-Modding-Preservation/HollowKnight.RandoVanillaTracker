@@ -7,6 +7,8 @@ namespace RandoVanillaTracker
     // More or less copied from homothety's RandomizerMod PoolSettings
     public class GlobalSettings
     {
+        public bool Transitions;
+
         public bool Dreamers;
         public bool Skills;
         public bool Charms;
@@ -33,9 +35,9 @@ namespace RandoVanillaTracker
         public bool JournalEntries;
         public bool JunkPitChests;
 
-        private static Dictionary<string, FieldInfo> fields = typeof(GlobalSettings)
+        private static readonly Dictionary<string, FieldInfo> fields = typeof(GlobalSettings)
             .GetFields(BindingFlags.Public | BindingFlags.Instance)
-            .Where(f => f.GetType() == typeof(bool))
+            .Where(f => f.FieldType == typeof(bool))
             .ToDictionary(f => f.Name, f => f);
 
         public bool GetFieldByName(string fieldName)

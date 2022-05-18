@@ -24,7 +24,7 @@ namespace RandoVanillaTracker
         public void OnLoadGlobal(GlobalSettings gs) => GS = gs;
         public GlobalSettings OnSaveGlobal() => GS;
 
-        internal Dictionary<string, InteropInfo> Interops = new();
+        internal Dictionary<string, Func<List<RandoPlacement>>> Interops = new();
 
         public override void Initialize()
         {
@@ -37,15 +37,11 @@ namespace RandoVanillaTracker
         /// <summary>
         /// Pass interop information to RandoVanillaTracker. Needs to be called once before the Randomizer Connections menu is entered for the first time.
         /// </summary>
-        public static void AddInterop(string pool, Func<bool> RandomizePool, Func<List<RandoPlacement>> GetPlacements)
+        public static void AddInterop(string pool, Func<List<RandoPlacement>> GetPlacements)
         {
             if (Instance.Interops.ContainsKey(pool)) return;
 
-            Instance.Interops.Add(pool, new()
-            {
-                RandomizePool = RandomizePool,
-                GetPlacements = GetPlacements
-            });
+            Instance.Interops.Add(pool, GetPlacements);
             
             if (!GS.trackInteropPool.ContainsKey(pool))
             {
@@ -53,17 +49,11 @@ namespace RandoVanillaTracker
             }
         }
     }
-
-    internal class InteropInfo
-    {
-        public Func<bool> RandomizePool;
-        public Func<List<RandoPlacement>> GetPlacements;
-    }
     
     [ModExportName(nameof(RandoVanillaTracker))]
     public static class RVTExport
     {
-        public static void AddInterop(string pool, Func<bool> RandomizePool, Func<List<RandoPlacement>> GetPlacements)
-            => RandoVanillaTracker.AddInterop(pool, RandomizePool, GetPlacements);
+        public static void AddInterop(string pool, Func<List<RandoPlacement>> GetPlacements)
+            => RandoVanillaTracker.AddInterop(pool, GetPlacements);
     }
 }

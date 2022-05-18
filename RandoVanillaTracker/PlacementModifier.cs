@@ -89,11 +89,11 @@ namespace RandoVanillaTracker
                 newPlacements.AddRange(placements);
             }
 
-            foreach (KeyValuePair<string, Func<List<RandoPlacement>>> kvp in RVT.Instance.Interops)
+            foreach (KeyValuePair<string, Func<List<VanillaDef>>> kvp in RVT.Instance.Interops)
             {
                 if (RVT.GS.trackInteropPool[kvp.Key])
                 {
-                    List<RandoPlacement> placements = new(kvp.Value.Invoke().Where(p => !ShopNames.Contains(p.Location.Name)));
+                    TryMakeItemPlacements(kvp.Value.Invoke().ToArray(), out List<RandoPlacement> placements);
 
                     newPlacements.AddRange(placements);
                 }

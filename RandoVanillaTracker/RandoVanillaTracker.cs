@@ -1,9 +1,8 @@
 ﻿using Modding;
 using MonoMod.ModInterop;
-using RandomizerCore;
+using RandomizerMod.RandomizerData;
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 
 namespace RandoVanillaTracker
 {
@@ -24,7 +23,7 @@ namespace RandoVanillaTracker
         public void OnLoadGlobal(GlobalSettings gs) => GS = gs;
         public GlobalSettings OnSaveGlobal() => GS;
 
-        internal Dictionary<string, Func<List<RandoPlacement>>> Interops = new();
+        internal Dictionary<string, Func<List<VanillaDef>>> Interops = new();
 
         public override void Initialize()
         {
@@ -37,7 +36,7 @@ namespace RandoVanillaTracker
         /// <summary>
         /// Pass interop information to RandoVanillaTracker. Needs to be called once before the Randomizer Connections menu is entered for the first time.
         /// </summary>
-        public static void AddInterop(string pool, Func<List<RandoPlacement>> GetPlacements)
+        public static void AddInterop(string pool, Func<bool> RandomizePool, Func<List<VanillaDef>> GetPlacements)
         {
             if (Instance.Interops.ContainsKey(pool)) return;
 
@@ -53,7 +52,7 @@ namespace RandoVanillaTracker
     [ModExportName(nameof(RandoVanillaTracker))]
     public static class RVTExport
     {
-        public static void AddInterop(string pool, Func<List<RandoPlacement>> GetPlacements)
-            => RandoVanillaTracker.AddInterop(pool, GetPlacements);
+        public static void AddInterop(string pool, Func<bool> RandomizePool, Func<List<VanillaDef>> GetPlacements)
+            => RandoVanillaTracker.AddInterop(pool, RandomizePool, GetPlacements);
     }
 }

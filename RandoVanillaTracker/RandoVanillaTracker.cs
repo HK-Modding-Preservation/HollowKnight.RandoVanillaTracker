@@ -39,6 +39,11 @@ namespace RandoVanillaTracker
                 RandomizePool = RandomizePool,
                 GetPlacements = GetPlacements
             });
+            
+            if (!GS.trackInteropPool.ContainsKey(pool))
+            {
+                GS.trackInteropPool.Add(pool, false);
+            }
         }
     }
 

@@ -4,6 +4,7 @@ using RandomizerCore.Logic;
 using RandomizerMod.RandomizerData;
 using RandomizerMod.RC;
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using RC = RandomizerMod.RC.RandoController;
 using Rand = RandomizerCore.Randomization.Randomizer;
@@ -111,7 +112,11 @@ namespace RandoVanillaTracker
             {
                 if (!kvp.Value.RandomizePool.Invoke() && RVT.GS.trackInteropPool[kvp.Key])
                 {
-                    stagedPlacements.Add(new List<RandoPlacement>[] { kvp.Value.GetPlacements.Invoke() });
+                    List<RandoPlacement> placements = kvp.Value.GetPlacements.Invoke().Where(p => !ShopNames.Contains(p.Location.Name));
+                    
+                    rc.ctx.Vanilla.RemoveAll(p1 => placements.Any(p2 => p1.Location.Name == p2.Location.Name && p1.Item.Name == p2.Item.Name));
+                    
+                    stagedPlacements.Add(new List<RandoPlacement>[] { placements });
                 }
             }
 

@@ -1,4 +1,5 @@
 ﻿using Modding;
+using MonoMod.ModInterop;
 using RandomizerCore;
 using System;
 using System.Collections.Generic;
@@ -13,6 +14,8 @@ namespace RandoVanillaTracker
         public RandoVanillaTracker()
         {
             Instance = this;
+            
+            typeof(RVTExport).ModInterop();
         }
         
         public override string GetVersion() => "1.1.0";
@@ -55,5 +58,12 @@ namespace RandoVanillaTracker
     {
         public Func<bool> RandomizePool;
         public Func<List<RandoPlacement>> GetPlacements;
+    }
+    
+    [ModExportName(nameof(RandoVanillaTracker))]
+    public static class RVTExport
+    {
+        public static void AddInterop(string pool, Func<bool> RandomizePool, Func<List<RandoPlacement>> GetPlacements)
+            => RandoVanillaTracker.AddInterop(pool, RandomizePool, GetPlacements);
     }
 }

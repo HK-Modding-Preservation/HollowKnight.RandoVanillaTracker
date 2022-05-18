@@ -60,10 +60,11 @@ namespace RandoVanillaTracker
         {
             rvtInteropButtons = new();
 
-            foreach (InteropInfo info in RVT.Instance.Interops.Values)
+            foreach (KeyValuePair<string InteropInfo> kvp in RVT.Instance.Interops)
             {
-                ToggleButton button = new(rvtPage, info.TrackPool.GetMenuName());
-                button.Bind(info.TrackPoolObj, info.TrackPool);
+                ToggleButton button = new(rvtPage, kvp.Key);
+                button.SetValue(RVT.GS.trackInteropPool[kvp.Key]);
+                button.SelfChanged += b => RVT.GS.trackInteropPool[kvp.Key] = (bool)b.Value;
 
                 rvtInteropButtons.Add(button);
             }

@@ -107,11 +107,11 @@ namespace RandoVanillaTracker
 
             rc.ctx.Vanilla.RemoveAll(p => ItemsToConvert.Contains(p.Item.Name));
 
-            foreach (InteropInfo interop in RVT.Instance.Interops.Values)
+            foreach (KeyValuePair<string, InteropInfo> kvp in RVT.Instance.Interops)
             {
-                if (!interop.RandomizePool.Invoke() && (bool)interop.TrackPool.GetValue(interop.TrackPoolObj))
+                if (!kvp.Value.RandomizePool.Invoke() && RVT.GS.trackInteropPool[kvp.Key])
                 {
-                    stagedPlacements.Add(new List<RandoPlacement>[] { interop.GetPlacements.Invoke() });
+                    stagedPlacements.Add(new List<RandoPlacement>[] { kvp.Value.GetPlacements.Invoke() });
                 }
             }
 

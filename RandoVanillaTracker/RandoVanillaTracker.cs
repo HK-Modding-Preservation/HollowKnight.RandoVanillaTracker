@@ -9,6 +9,12 @@ namespace RandoVanillaTracker
     public class RandoVanillaTracker : Mod, IGlobalSettings<GlobalSettings>
     {
         public static RandoVanillaTracker Instance;
+        
+        public RandoVanillaTracker()
+        {
+            Instance = this;
+        }
+        
         public override string GetVersion() => "1.1.0";
 
         public static GlobalSettings GS = new();
@@ -19,8 +25,6 @@ namespace RandoVanillaTracker
 
         public override void Initialize()
         {
-            Instance = this;
-
             if (ModHooks.GetMod("Randomizer 4") is not Mod) return;
             
             Menu.Hook();

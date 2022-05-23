@@ -1,230 +1,132 @@
-﻿using MonoMod.RuntimeDetour;
-using RandomizerCore;
-using RandomizerCore.Logic;
+﻿using ItemChanger;
 using RandomizerMod.RandomizerData;
 using RandomizerMod.RC;
+using RandomizerMod.Settings;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Rand = RandomizerCore.Randomization.Randomizer;
-using RC = RandomizerMod.RC.RandoController;
-using RP = RandomizerCore.RandoPlacement;
+using ElementType = RandomizerMod.RC.RequestBuilder.ElementType;
 using RVT = RandoVanillaTracker.RandoVanillaTracker;
 
 namespace RandoVanillaTracker
 {
     internal class PlacementModifier
     {
-        private static RC rc;
-        private static LogicManager Lm => rc.ctx.LM;
+        // We enumerate transition groups because the vanilla item group builder isn't an item group, so is returned by 
+        private static VanillaItemGroupBuilder GetVanillaGroupBuilder(RequestBuilder rb) => rb.EnumerateTransitionGroups().OfType<VanillaItemGroupBuilder>().First();
 
-        private static HashSet<string> items = new();
-        private static HashSet<string> locations = new();
-
-        private static Hook ControllerRunHook;
-        private static Hook RandomizerRunHook;
 
         public static void Hook()
         {
-            Type ControllerRun = Type.GetType("RandomizerMod.RC.RandoController, RandomizerMod");
-            Type RandomizerRun = Type.GetType("RandomizerCore.Randomization.Randomizer, RandomizerCore");
-
-            if (ControllerRun == null || RandomizerRun == null) return;
-
-            ControllerRunHook = new Hook(ControllerRun.GetMethod("Run"), typeof(PlacementModifier).GetMethod(nameof(OnControllerRun)));
-            RandomizerRunHook = new Hook(RandomizerRun.GetMethod("Run"), typeof(PlacementModifier).GetMethod(nameof(OnRandomizerRun)));
+            RequestBuilder.OnUpdate.Subscribe(-5000f, RecordTrackedPools);
+            RequestBuilder.OnUpdate.Subscribe(300f, TrackTransitions);
+            RequestBuilder.OnUpdate.Subscribe(5000f, TrackInteropItems);
+            RequestBuilder.OnUpdate.Subscribe(300f, DerandomizeTrackedItems);
+            RequestBuilder.OnUpdate.Subscribe(300f, RemoveShopCostRandomize);
         }
 
-        public static void OnControllerRun(Action<RC> orig, RC self)
+        private static void TrackTransitions(RequestBuilder rb)
         {
-            rc = self;
+            if (!RVT.GS.Transitions) return;
 
-            orig(self);
-        }
+            VanillaItemGroupBuilder vb = GetVanillaGroupBuilder(rb);
 
-        public static List<List<RP>[]> OnRandomizerRun(Func<Rand, List<List<RP>[]>> orig, Rand self)
-        {
-            return AddVanillaPlacements(orig(self));
-        }
-
-        public static List<List<RP>[]> AddVanillaPlacements(List<List<RP>[]> stagedPlacements)
-        {
-            items = new();
-            locations = new();
-
-            foreach (List<RP>[] rpll in stagedPlacements)
+            foreach (VanillaDef vd in rb.Vanilla.Values.SelectMany(x => x))
             {
-                foreach (List<RP> rpl in rpll)
+                if (Data.IsTransition(vd.Item) && Data.IsTransition(vd.Location))
                 {
-                    foreach (RP rp in rpl)
-                    {
-                        if (!items.Contains(rp.Item.Name))
-                        {
-                            items.Add(rp.Item.Name);
-                        }
-
-                        if (!locations.Contains(rp.Location.Name))
-                        {
-                            locations.Add(rp.Location.Name);
-                        }
-                    }
+                    rb.RemoveFromVanilla(vd);
+                    vb.VanillaTransitions.Add(vd);
                 }
             }
+        }
 
-            List<RP> newPlacements = new();
-
-            foreach (PoolDef pool in Data.Pools)
-            {
-                if (RVT.GS.GetFieldByName(pool.Path.Replace("PoolSettings.", "")))
-                {
-                    TryMakeItemPlacements(pool.Vanilla, out List<RP> placements);
-
-                    newPlacements.AddRange(placements);
-                }
-            }
-
-            if (RVT.GS.Transitions)
-            {
-                TryMakeTransitionPlacements(Data.GetRoomTransitionNames(), out List<RP> placements);
-
-                newPlacements.AddRange(placements);
-            }
+        private static void TrackInteropItems(RequestBuilder rb)
+        {
+            VanillaItemGroupBuilder vb = GetVanillaGroupBuilder(rb);
 
             foreach (KeyValuePair<string, Func<List<VanillaDef>>> kvp in RVT.Instance.Interops)
             {
                 if (RVT.GS.trackInteropPool[kvp.Key])
                 {
-                    TryMakeItemPlacements(kvp.Value.Invoke().ToArray(), out List<RP> placements);
+                    foreach (VanillaDef vd in kvp.Value.Invoke())
+                    {
+                        if (rb.Vanilla.TryGetValue(vd.Location, out List<VanillaDef> defs))
+                        {
+                            int count = defs.Count(x => x == vd);
+                            rb.RemoveFromVanilla(vd);
 
-                    newPlacements.AddRange(placements);
-                }
-            }
-
-            rc.ctx.Vanilla.RemoveAll(gp => newPlacements.Any(np => gp.Item.Name == np.Item.Name));
-
-            stagedPlacements.Add(new List<RP>[] { newPlacements });
-
-            return stagedPlacements;
-        }
-
-        private static void TryMakeItemPlacements(VanillaDef[] defs, out List<RP> placements)
-        {
-            placements = new();
-
-            foreach (VanillaDef vd in defs)
-            {
-                if ((rc.gs.PoolSettings.Charms || rc.gs.PoolSettings.GrimmkinFlames)
-                    && ConditionalGrimmkinFlames.Contains(vd.Location)) continue;
-
-                if (!items.Contains(vd.Item) && !ShopNames.Contains(vd.Location))
-                {
-                    placements.Add(MakeItemPlacement(vd));
+                            for (int i = 0; i < count; i++)
+                            {
+                                vb.VanillaPlacements.Add(vd);
+                            }
+                        }
+                    }
                 }
             }
         }
 
-        private static RP MakeItemPlacement(VanillaDef def)
+        // Stop the randomizer from adding randomized geo costs to shops
+        private static void RemoveShopCostRandomize(RequestBuilder rb)
         {
-            if (!rc.rb.TryGetItemDef(def.Item, out ItemDef id))
+            string[] shops = new[]
             {
-                id = Data.GetItemDef(def.Item);
-            }
-
-            RandoModItem item = new()
-            {
-                item = Lm.GetItem(def.Item),
-                ItemDef = id
+                LocationNames.Sly, LocationNames.Sly_Key, LocationNames.Iselda, LocationNames.Salubra, LocationNames.Leg_Eater,
             };
 
-            if (!rc.rb.TryGetLocationDef(def.Location, out LocationDef ld))
+            foreach (string s in shops)
             {
-                ld = Data.GetLocationDef(def.Location);
-            }
-
-            RandoModLocation location = new()
-            {
-                logic = Lm.GetLogicDef(def.Location),
-                LocationDef = ld
-            };
-
-            void ApplyCost(CostDef cost)
-            {
-                switch (cost.Term)
+                rb.EditLocationRequest(s, info =>
                 {
-                    case "GEO":
-                        location.AddCost(new LogicGeoCost(Lm, cost.Amount));
-                        break;
-                    default:
-                        location.AddCost(new SimpleCost(Lm.GetTerm(cost.Term), cost.Amount));
-                        break;
-                }
+                    info.onRandomizerFinish = null;
+                });
             }
-
-            if (Data.TryGetCost(def.Location, out CostDef baseCost))
-            {
-                ApplyCost(baseCost);
-            }
-
-            if (def.Costs != null)
-            {
-                foreach (CostDef cost in def.Costs)
-                {
-                    ApplyCost(cost);
-                }
-            }
-
-            return new(item, location);
         }
 
-        private static readonly HashSet<string> ConditionalGrimmkinFlames = new()
-        {
-            "Grimmkin_Flame-City_Storerooms",
-            "Grimmkin_Flame-Greenpath",
-            "Grimmkin_Flame-Crystal_Peak",
-            "Grimmkin_Flame-King's_Pass",
-            "Grimmkin_Flame-Resting_Grounds",
-            "Grimmkin_Flame-Kingdom's_Edge"
-        };
+        private static HashSet<string> recordedPools = new();
 
-        private static readonly HashSet<string> ShopNames = new()
+        // Trick the randomizer into thinking that the pools are randomized
+        private static void RecordTrackedPools(RequestBuilder rb)
         {
-            "Sly",
-            "Sly_(Key)",
-            "Iselda",
-            "Salubra",
-            "Salubra_(Requires_Charms)",
-            "Leg_Eater",
-            "Grubfather",
-            "Seer",
-            "Egg_Shop"
-        };
+            recordedPools.Clear();
 
-        private static void TryMakeTransitionPlacements(IEnumerable<string> transitions, out List<RP> placements)
-        {
-            placements = new();
-
-            foreach (string source in transitions)
+            // Add a group that will catch all vanilla items
+            StageBuilder sb = rb.InsertStage(0, "RVT Item Stage");
+            VanillaItemGroupBuilder vb = new();
+            vb.label = "RVT Item Group";
+            sb.Add(vb);
+            
+            foreach (PoolDef pool in Data.Pools)
             {
-                TransitionDef sourceDef = Data.GetTransitionDef(source);
-
-                if (sourceDef.VanillaTarget != null && Lm.TransitionLookup.ContainsKey(source)
-                    && !locations.Contains(source) && !items.Contains(sourceDef.VanillaTarget))
+                if (RVT.GS.GetFieldByName(pool.Path.Replace("PoolSettings.", "")) && pool.IsVanilla(rb.gs))
                 {
-                    placements.Add(MakeTransitionPlacement(sourceDef));
+                    recordedPools.Add(pool.Name);
+                    Util.Set(rb.gs.PoolSettings, pool.Path, true);
+
+                    foreach (VanillaDef vd in pool.Vanilla)
+                    {
+                        vb.VanillaPlacements.Add(vd);
+                    }
                 }
             }
         }
 
-        private static RP MakeTransitionPlacement(TransitionDef sourceDef)
+        // We need to remove items one by one so cursed masks work
+        private static void DerandomizeTrackedItems(RequestBuilder rb)
         {
-            RandoModTransition source = new(Lm.GetTransition(sourceDef.Name));
-            source.TransitionDef = sourceDef;
+            foreach (PoolDef pool in Data.Pools)
+            {
+                if (!recordedPools.Contains(pool.Name)) continue;
 
-            RandoModTransition target = new(Lm.GetTransition(sourceDef.VanillaTarget));
-            target.TransitionDef = Data.GetTransitionDef(sourceDef.VanillaTarget);
-
-            return new(target, source);
+                foreach (string item in pool.IncludeItems)
+                {
+                    ((ItemGroupBuilder)rb.GetGroupFor(item, ElementType.Item)).Items.Remove(item, 1);
+                }
+                foreach (string location in pool.IncludeLocations)
+                {
+                    ((ItemGroupBuilder)rb.GetGroupFor(location, ElementType.Location)).Locations.Remove(location, 1);
+                }
+            }
         }
-
     }
 }

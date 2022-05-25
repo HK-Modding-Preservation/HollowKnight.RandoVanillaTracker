@@ -1,9 +1,11 @@
 ﻿using ItemChanger;
+using RandomizerMod.Logging;
 using RandomizerMod.RandomizerData;
 using RandomizerMod.RC;
 using RandomizerMod.Settings;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using ElementType = RandomizerMod.RC.RequestBuilder.ElementType;
 using RVT = RandoVanillaTracker.RandoVanillaTracker;
@@ -22,6 +24,19 @@ namespace RandoVanillaTracker
             RequestBuilder.OnUpdate.Subscribe(300f, TrackTransitions);
             RequestBuilder.OnUpdate.Subscribe(5000f, TrackInteropItems);
             RequestBuilder.OnUpdate.Subscribe(300f, DerandomizeTrackedItems);
+
+            SettingsLog.AfterLogSettings += LogRVTSettings;
+        }
+
+        private static HashSet<string> recordedPools = new();
+
+        private static void LogRVTSettings(LogArguments args, TextWriter tw)
+        {
+            tw.WriteLine("RandoVanillaTracker Tracked Pools");
+            foreach (string s in recordedPools)
+            {
+                tw.WriteLine($"- {s}");
+            }
         }
 
         private static void TrackTransitions(RequestBuilder rb)
@@ -64,8 +79,6 @@ namespace RandoVanillaTracker
                 }
             }
         }
-
-        private static HashSet<string> recordedPools = new();
 
         // Trick the randomizer into thinking that the pools are randomized
         private static void RecordTrackedPools(RequestBuilder rb)

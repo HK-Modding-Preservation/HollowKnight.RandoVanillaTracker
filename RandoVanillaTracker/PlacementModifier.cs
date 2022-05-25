@@ -22,7 +22,6 @@ namespace RandoVanillaTracker
             RequestBuilder.OnUpdate.Subscribe(300f, TrackTransitions);
             RequestBuilder.OnUpdate.Subscribe(5000f, TrackInteropItems);
             RequestBuilder.OnUpdate.Subscribe(300f, DerandomizeTrackedItems);
-            RequestBuilder.OnUpdate.Subscribe(300f, RemoveShopCostRandomize);
         }
 
         private static void TrackTransitions(RequestBuilder rb)
@@ -66,23 +65,6 @@ namespace RandoVanillaTracker
             }
         }
 
-        // Stop the randomizer from adding randomized geo costs to shops
-        private static void RemoveShopCostRandomize(RequestBuilder rb)
-        {
-            string[] shops = new[]
-            {
-                LocationNames.Sly, LocationNames.Sly_Key, LocationNames.Iselda, LocationNames.Salubra, LocationNames.Leg_Eater,
-            };
-
-            foreach (string s in shops)
-            {
-                rb.EditLocationRequest(s, info =>
-                {
-                    info.onRandomizerFinish = null;
-                });
-            }
-        }
-
         private static HashSet<string> recordedPools = new();
 
         // Trick the randomizer into thinking that the pools are randomized
@@ -101,7 +83,7 @@ namespace RandoVanillaTracker
                 if (RVT.GS.GetFieldByName(pool.Path.Replace("PoolSettings.", "")) && pool.IsVanilla(rb.gs))
                 {
                     recordedPools.Add(pool.Name);
-                    Util.Set(rb.gs.PoolSettings, pool.Path, true);
+                    rb.gs.Set(pool.Path, true);
 
                     foreach (VanillaDef vd in pool.Vanilla)
                     {

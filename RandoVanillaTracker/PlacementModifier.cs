@@ -1,5 +1,4 @@
-﻿using ItemChanger;
-using RandomizerMod.Logging;
+﻿using RandomizerMod.Logging;
 using RandomizerMod.RandomizerData;
 using RandomizerMod.RC;
 using RandomizerMod.Settings;
@@ -45,7 +44,7 @@ namespace RandoVanillaTracker
 
             VanillaItemGroupBuilder vb = GetVanillaGroupBuilder(rb);
 
-            foreach (VanillaDef vd in rb.Vanilla.Values.SelectMany(x => x))
+            foreach (VanillaDef vd in rb.Vanilla.Values.SelectMany(x => x).ToList())
             {
                 if (Data.IsTransition(vd.Item) && Data.IsTransition(vd.Location))
                 {

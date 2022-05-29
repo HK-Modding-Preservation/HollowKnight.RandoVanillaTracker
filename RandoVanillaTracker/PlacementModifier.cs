@@ -134,7 +134,13 @@ namespace RandoVanillaTracker
                 foreach (VanillaDef vd in pool.Vanilla)
                 {
                     // TODO - this will only work when the RemoveFromVanilla(VanillaDef) function is fixed in Randomizer
-                    rb.RemoveFromVanilla(vd);
+                    //rb.RemoveFromVanilla(vd);
+
+                    // Temporary fixed version of RemoveFromVanilla
+                    if (rb.Vanilla.TryGetValue(vd.Location, out List<VanillaDef> defs))
+                    {
+                        defs.RemoveAll(def => def.Equals(vd));
+                    }
                 }
             }
         }

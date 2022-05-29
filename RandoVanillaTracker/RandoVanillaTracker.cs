@@ -31,6 +31,7 @@ namespace RandoVanillaTracker
             
             Menu.Hook();
             PlacementModifier.Hook();
+            CostFixes.Hook();
         }
 
         /// <summary>

@@ -50,6 +50,13 @@ namespace RandoVanillaTracker
             rvtPageTitle = new MenuLabel(rvtPage, "Select vanilla placements to track", MenuLabel.Style.Title);
             rvtPageTitle.MoveTo(new Vector2(0, 400));
             rvtMEF = new(rvtPage, RVT.GS);
+
+            rvtMEF.ElementLookup["Charms"].SelfChanged += CostFixes.SelfChanged;
+            rvtMEF.ElementLookup["Relics"].SelfChanged += CostFixes.SelfChanged;
+            rvtMEF.ElementLookup["PaleOre"].SelfChanged += CostFixes.SelfChanged;
+            rvtMEF.ElementLookup["RancidEggs"].SelfChanged += CostFixes.SelfChanged;
+            rvtMEF.ElementLookup["MaskShards"].SelfChanged += CostFixes.SelfChanged;
+
             ConstructInteropButtons();
             rvtGIP = new(rvtPage, new Vector2(0, 300), 4, 50f, 400f, true, rvtMEF.Elements.Concat(rvtInteropButtons).ToArray());
             Localize(rvtMEF);

@@ -90,11 +90,11 @@ namespace RandoVanillaTracker
             {
                 TryOverrideMaxGrubCost(31);
             }
-            else if (RVT.GS.Relics && !(bool)poolRelics.Value)
+            else if (RVT.GS.RancidEggs && !(bool)poolRancidEggs.Value)
             {
                 TryOverrideMaxGrubCost(16);
             }
-            else if (RVT.GS.PaleOre && !(bool)poolPaleOre.Value)
+            else if (RVT.GS.MaskShards && !(bool)poolMaskShards.Value)
             {
                 TryOverrideMaxGrubCost(5);
             }
@@ -116,6 +116,20 @@ namespace RandoVanillaTracker
 
         private static void TryOverrideMaxGrubCost(int value)
         {
+            // If the user tried to change the max grub cost while it is overridden, respect the change
+            // Unfortunately there doesn't seem to be an easy way to tell if the user set the value to one of the shown numbers
+            // as opposed to this mod
+            if (overrideMaxGrubCost
+                && (int)maxGrubCost.Value > value
+                && (int)maxGrubCost.Value != 46
+                && (int)maxGrubCost.Value != 38
+                && (int)maxGrubCost.Value != 31
+                && (int)maxGrubCost.Value != 16
+                && (int)maxGrubCost.Value != 5)
+            {
+                origMaxGrubCost = (int)maxGrubCost.Value;
+            }
+
             int newValue = Math.Max(value, origMaxGrubCost);
 
             overrideMaxGrubCost = true;
@@ -123,6 +137,8 @@ namespace RandoVanillaTracker
             if ((int)maxGrubCost.Value != newValue)
             {
                 maxGrubCost.SetValue(newValue);
+
+                grubTolerance.SetValue(origGrubTolerance);
             }
         }
     }

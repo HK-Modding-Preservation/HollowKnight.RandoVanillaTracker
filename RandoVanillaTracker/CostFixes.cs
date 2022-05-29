@@ -123,7 +123,7 @@ namespace RandoVanillaTracker
         {
             if (otherSettingChanged) return;
 
-            if ((int)obj.Value > MaxGrubCostFloor() + origGrubTolerance)
+            if ((int)obj.Value + (int)maxGrubCost.Value <= 46)
             {
                 origGrubTolerance = (int)obj.Value;
             }

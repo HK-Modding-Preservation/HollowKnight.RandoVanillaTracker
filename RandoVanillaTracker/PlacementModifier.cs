@@ -1,5 +1,4 @@
 ﻿using ItemChanger;
-using RandomizerCore.Extensions;
 using RandomizerMod.Logging;
 using RandomizerMod.RandomizerData;
 using RandomizerMod.RC;
@@ -8,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using ElementType = RandomizerMod.RC.RequestBuilder.ElementType;
 using RVT = RandoVanillaTracker.RandoVanillaTracker;
 
 namespace RandoVanillaTracker
@@ -171,10 +169,10 @@ namespace RandoVanillaTracker
         {
             if (rb.Vanilla.TryGetValue(vd.Location, out List<VanillaDef> defs))
             {
-                foreach (VanillaDef def2 in defs)
-                {
-                    if (def2.Equals(vd)) RVT.Instance.Log($"RFV: {def2}");
-                }
+                //foreach (VanillaDef def2 in defs)
+                //{
+                //    if (def2.Equals(vd)) RVT.Instance.Log($"RFV: {def2}");
+                //}
                 defs.RemoveAll(def => def.Equals(vd));
             }
         }

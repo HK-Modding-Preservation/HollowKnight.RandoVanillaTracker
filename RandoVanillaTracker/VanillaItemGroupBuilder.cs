@@ -13,6 +13,7 @@ namespace RandoVanillaTracker
         public static readonly Dictionary<string, int> UniqueShopCostLookup = new()
         {
             [ItemNames.Wayward_Compass] = 220,
+            [ItemNames.Quill] = 120,
             
             [ItemNames.Simple_Key] = 950,
             [ItemNames.Rancid_Egg] = 50,

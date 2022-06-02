@@ -127,11 +127,11 @@ namespace RandoVanillaTracker
 
                 foreach (string item in pool.IncludeItems)
                 {
-                    ((ItemGroupBuilder)rb.GetGroupFor(item, ElementType.Item)).Items.Remove(item, 1);
+                    rb.GetItemGroupFor(item).Items.Remove(item, 1);
                 }
                 foreach (string location in pool.IncludeLocations)
                 {
-                    ((ItemGroupBuilder)rb.GetGroupFor(location, ElementType.Location)).Locations.Remove(location, 1);
+                    rb.GetLocationGroupFor(location).Locations.Remove(location, 1);
                 }
 
                 // Tracked VanillaDefs might be added to vanilla by randomizer, for example depending on long location settings.

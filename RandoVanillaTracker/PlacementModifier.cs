@@ -26,8 +26,28 @@ namespace RandoVanillaTracker
             RequestBuilder.OnUpdate.Subscribe(5000f, TrackInteropItems);
             // Derandomize items as soon as they get added to the pool, so we catch them before shop rebalancing
             RequestBuilder.OnUpdate.Subscribe(0.1f, DerandomizeTrackedItems);
+            RequestBuilder.OnUpdate.Subscribe(0.1f, FixGrimmchild);
 
             SettingsLog.AfterLogSettings += LogRVTSettings;
+        }
+
+        // Special handling for Grimmchild1
+        private static void FixGrimmchild(RequestBuilder rb)
+        {
+            if (_recordedPools.Contains("Charm") || _recordedPools.Contains("Charms"))
+            {
+                rb.GetItemGroupFor(ItemNames.Grimmchild2).Items.Remove(ItemNames.Grimmchild1, 1);
+
+                VanillaItemGroupBuilder vigb = GetVanillaGroupBuilder(rb);
+
+                if (vigb.VanillaPlacements.FirstOrDefault(x => x.Item == ItemNames.Grimmchild2) is VanillaDef vanillaGrimmchild 
+                    && (rb.gs.PoolSettings.GrimmkinFlames || _recordedPools.Contains("Flame")))
+                {
+                    vigb.VanillaPlacements.Remove(vanillaGrimmchild);
+                    VanillaDef modifiedVG = vanillaGrimmchild with { Item = ItemNames.Grimmchild1 };
+                    vigb.VanillaPlacements.Add(modifiedVG);
+                }
+            }
         }
 
         private static HashSet<string> _recordedPools = new();

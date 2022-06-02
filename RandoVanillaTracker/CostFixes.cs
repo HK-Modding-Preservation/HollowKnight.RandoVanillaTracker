@@ -31,6 +31,10 @@ namespace RandoVanillaTracker
 
         private static void OnMenuLoad(MenuPage landingPage)
         {
+            MenuPreset<CostSettings> costPreset = GetField<RandomizerMenu, MenuPreset<CostSettings>>(RandomizerMenuAPI.Menu, "CostPreset");
+
+            costPreset.OnSetPreset += CostPreset_OnSetPreset;
+
             MenuElementFactory<PoolSettings> poolMEF = GetField<RandomizerMenu, MenuElementFactory<PoolSettings>>(RandomizerMenuAPI.Menu, "poolMEF");
 
             poolCharms = poolMEF.ElementLookup["Charms"];
@@ -94,6 +98,11 @@ namespace RandoVanillaTracker
             {
                 return 0;
             }
+        }
+
+        private static void CostPreset_OnSetPreset(CostSettings obj)
+        {
+            Other_SelfChanged(null);
         }
 
         public static void Other_SelfChanged(IValueElement obj)

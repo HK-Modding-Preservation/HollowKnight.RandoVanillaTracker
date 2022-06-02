@@ -114,6 +114,16 @@ namespace RandoVanillaTracker
                         // Record the number of vanilla items that each shop will hold, to fix rebalancing issues later
                         if (ShopNames.Contains(vd.Location))
                         {
+                            RVT.Instance.Log(vd.Item + " at " + vd.Location);
+
+                            if (vd.Costs is not null)
+                            {
+                                foreach (CostDef cost in vd.Costs)
+                                {
+                                    RVT.Instance.Log("Cost:" + cost);
+                                }
+                            }
+
                             if (_shopVanillaCounts.ContainsKey(vd.Location))
                             {
                                 _shopVanillaCounts[vd.Location]++;
@@ -183,67 +193,52 @@ namespace RandoVanillaTracker
             LocationNames.Grubfather
         };
 
-        // Rebalance so there are at least enough locations in each shop for vanilla items
+        // Rebalance so that there is no errant item padding after adding vanilla shop items
         private static void RebalanceShopCounts(RequestBuilder rb)
         {
-            Dictionary<string, HashSet<string>> multiSets = new();
+            HashSet<string> multiSet = new();
 
-            Dictionary<string, int> counts = new();
+            int count = 0;
 
-            // Decouple the counting from the rebalancing
-            foreach (ItemGroupBuilder gb in rb.EnumerateItemGroups())
+            // Get all the flexible count locations, get the total count
+            foreach (string l in rb.MainItemGroup.Locations.EnumerateDistinct())
             {
-
-                multiSets.Add(gb.label, new());
-
-                int count = 0;
-                foreach (string l in gb.Locations.EnumerateDistinct())
+                if (rb.TryGetLocationDef(l, out LocationDef def) && def.FlexibleCount)
                 {
-                    if (rb.TryGetLocationDef(l, out LocationDef def) && def.FlexibleCount)
-                    {
-                        multiSets[gb.label].Add(l);
-                        count += gb.Locations.GetCount(l);
-                    }
-                }
-
-                counts.Add(gb.label, count);
-            }
-
-            // Allocate vanilla slots by removing them evenly from counts
-            int vanillaTotalCount = _shopVanillaCounts.Values.Sum();
-
-            int countPerGB = Math.DivRem(vanillaTotalCount, counts.Count(), out int rem);
-
-            foreach(ItemGroupBuilder gb in rb.EnumerateItemGroups())
-            {
-                counts[gb.label] -= countPerGB;
-
-                // Also distribute remainder evenly
-                if (rem > 0)
-                {
-                    counts[gb.label]--;
-                    rem--;
+                    multiSet.Add(l);
+                    count += rb.MainItemGroup.Locations.GetCount(l);
                 }
             }
 
-            //TODO: Make sure each group gets one of each location if possible
+            // Allocate vanilla slots before rebalancing
+            count -= _shopVanillaCounts.Values.Sum();
 
-            foreach (ItemGroupBuilder gb in rb.EnumerateItemGroups())
+            string[] multi = multiSet.OrderBy(s => s).ToArray();
+
+            foreach (string l in multi)
             {
-                string[] multi = multiSets[gb.label].OrderBy(s => s).ToArray();
-                foreach (string l in multi)
-                {
-                    gb.Locations.Set(l, 0);
-                }
-                while (counts[gb.label]-- > 0)
-                {
-                    gb.Locations.Add(rb.rng.Next(multi));
-                }
+                rb.MainItemGroup.Locations.Set(l, 0);
             }
 
+            while (count-- > 0)
+            {
+                // Prioritize getting one slot into each shop
+                IEnumerable<string> emptyLocations = multiSet.Where(l => rb.MainItemGroup.Locations.GetCount(l) == 0);
+
+                if (emptyLocations is not null && emptyLocations.Any())
+                {
+                    rb.MainItemGroup.Locations.Add(emptyLocations.First());
+                    continue;
+                }
+
+                // Otherwise distribute randomly
+                rb.MainItemGroup.Locations.Add(rb.rng.Next(multi));
+            }
+
+            // Fill with tracked vanilla shop slots
             foreach (KeyValuePair<string, int> kvp in _shopVanillaCounts)
             {
-                ((ItemGroupBuilder)rb.GetGroupFor(kvp.Key, ElementType.Location)).Locations.AddRange(Enumerable.Repeat(kvp.Key, kvp.Value));
+                rb.MainItemGroup.Locations.AddRange(Enumerable.Repeat(kvp.Key, kvp.Value));
             }
         }
     }

@@ -5,11 +5,14 @@ using RandomizerMod.Menu;
 using RandomizerMod.Settings;
 using RVT = RandoVanillaTracker.RandoVanillaTracker;
 using System;
+using RandomizerMod.Settings.Presets;
 
 namespace RandoVanillaTracker
 {
     internal class CostFixes
     {
+        private static MenuPreset<CostSettings> costPreset;
+
         private static IValueElement poolCharms;
         private static IValueElement poolRelics;
         private static IValueElement poolPaleOre;
@@ -31,7 +34,7 @@ namespace RandoVanillaTracker
 
         private static void OnMenuLoad(MenuPage landingPage)
         {
-            MenuPreset<CostSettings> costPreset = GetField<RandomizerMenu, MenuPreset<CostSettings>>(RandomizerMenuAPI.Menu, "CostPreset");
+            costPreset = GetField<RandomizerMenu, MenuPreset<CostSettings>>(RandomizerMenuAPI.Menu, "CostPreset");
 
             costPreset.OnSetPreset += CostPreset_OnSetPreset;
 
@@ -111,6 +114,12 @@ namespace RandoVanillaTracker
 
             if ((int)maxGrubCost.Value != MaxGrubCostFloor())
             {
+                if (costPreset.Value != "Custom")
+                {
+                    origMaxGrubCost = CostPresetData.CostPresets[costPreset.Value].MaximumGrubCost;
+                    origGrubTolerance = CostPresetData.CostPresets[costPreset.Value].GrubTolerance;
+                }
+
                 maxGrubCost.SetValue(Math.Max(MaxGrubCostFloor(), origMaxGrubCost));
                 grubTolerance.SetValue(origGrubTolerance);
             }
@@ -126,6 +135,13 @@ namespace RandoVanillaTracker
             {
                 origMaxGrubCost = (int)obj.Value;
             }
+            
+            if ((int)obj.Value < MaxGrubCostFloor())
+            {
+                obj.SetValue(MaxGrubCostFloor());
+            }
+
+            grubTolerance.SetValue(origGrubTolerance);
         }
 
         public static void GrubTolerance_SelfChanged(IValueElement obj)

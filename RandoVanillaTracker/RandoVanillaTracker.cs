@@ -32,6 +32,11 @@ namespace RandoVanillaTracker
             Menu.Hook();
             PlacementModifier.Hook();
             CostFixes.Hook();
+
+            if (ModHooks.GetMod("RandoSettingsManager") is not null)
+            {
+                RSMInterop.Hook();
+            }
         }
 
         /// <summary>

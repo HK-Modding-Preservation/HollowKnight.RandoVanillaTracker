@@ -50,5 +50,10 @@ namespace RandoVanillaTracker
         }
         
         public Dictionary<string, bool> trackInteropPool = new();
+
+        public bool AnyEnabled()
+        {
+            return fields.Keys.Any(f => GetFieldByName(f)) || trackInteropPool.Values.Any(interop => interop);
+        }
     }
 }

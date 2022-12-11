@@ -64,6 +64,11 @@ namespace RandoVanillaTracker
                 e.SelfChanged += obj => SetTopLevelButtonColor();
             }
 
+            foreach (ToggleButton b in rvtInteropButtons)
+            {
+                b.SelfChanged += obj => SetTopLevelButtonColor();
+            }
+
             JumpToRVTButton = new(landingPage, Localize("RandoVanillaTracker"));
             JumpToRVTButton.AddHideAndShowEvent(landingPage, rvtPage);
             SetTopLevelButtonColor();
@@ -87,7 +92,8 @@ namespace RandoVanillaTracker
         {
             if (JumpToRVTButton != null)
             {
-                JumpToRVTButton.Text.color = rvtMEF.Elements.Any(e => e.Value is true) ? Colors.TRUE_COLOR : Colors.DEFAULT_COLOR;
+                JumpToRVTButton.Text.color = rvtMEF.Elements.Any(e => e.Value is true) || rvtInteropButtons.Any(b => b.Value is true)
+                    ? Colors.TRUE_COLOR : Colors.DEFAULT_COLOR;
             }
         }
     }

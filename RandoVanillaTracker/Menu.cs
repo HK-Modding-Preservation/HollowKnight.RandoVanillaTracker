@@ -38,8 +38,6 @@ namespace RandoVanillaTracker
 
         private bool HandleButton(MenuPage landingPage, out SmallButton button)
         {
-            JumpToRVTButton = new(landingPage, Localize("RandoVanillaTracker"));
-            JumpToRVTButton.AddHideAndShowEvent(landingPage, rvtPage);
             button = JumpToRVTButton;
             return true;
         }
@@ -60,6 +58,15 @@ namespace RandoVanillaTracker
             ConstructInteropButtons();
             rvtGIP = new(rvtPage, new Vector2(0, 300), 4, 50f, 400f, true, rvtMEF.Elements.Concat(rvtInteropButtons).ToArray());
             Localize(rvtMEF);
+
+            foreach (IValueElement e in rvtMEF.Elements)
+            {
+                e.SelfChanged += obj => SetTopLevelButtonColor();
+            }
+
+            JumpToRVTButton = new(landingPage, Localize("RandoVanillaTracker"));
+            JumpToRVTButton.AddHideAndShowEvent(landingPage, rvtPage);
+            SetTopLevelButtonColor();
         }
 
         private void ConstructInteropButtons()
@@ -73,6 +80,14 @@ namespace RandoVanillaTracker
                 button.SelfChanged += b => RVT.GS.trackInteropPool[pool] = (bool)b.Value;
 
                 rvtInteropButtons.Add(button);
+            }
+        }
+
+        private void SetTopLevelButtonColor()
+        {
+            if (JumpToRVTButton != null)
+            {
+                JumpToRVTButton.Text.color = rvtMEF.Elements.Any(e => e.Value is true) ? Colors.TRUE_COLOR : Colors.DEFAULT_COLOR;
             }
         }
     }

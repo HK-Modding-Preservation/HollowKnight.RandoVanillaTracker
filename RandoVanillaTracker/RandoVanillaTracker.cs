@@ -17,7 +17,7 @@ namespace RandoVanillaTracker
             typeof(RVTExport).ModInterop();
         }
         
-        public override string GetVersion() => "1.2.1";
+        public override string GetVersion() => "1.2.2";
 
         public static GlobalSettings GS = new();
         public void OnLoadGlobal(GlobalSettings gs) => GS = gs;

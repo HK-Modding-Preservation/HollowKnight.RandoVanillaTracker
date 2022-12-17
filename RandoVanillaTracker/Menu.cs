@@ -22,27 +22,28 @@ namespace RandoVanillaTracker
         internal List<ToggleButton> rvtInteropButtons;
         internal SmallButton JumpToRVTButton;
 
-        private static Menu _instance = null;
-        internal static Menu Instance => _instance ??= new Menu();
+        internal static Menu Instance { get; private set; }
 
         public static void OnExitMenu()
         {
-            _instance = null;
+            Instance = null;
         }
 
         public static void Hook()
         {
-            RandomizerMenuAPI.AddMenuPage(Instance.ConstructMenu, Instance.HandleButton);
+            RandomizerMenuAPI.AddMenuPage(ConstructMenu, HandleButton);
             MenuChangerMod.OnExitMainMenu += OnExitMenu;
         }
 
-        private bool HandleButton(MenuPage landingPage, out SmallButton button)
+        private static bool HandleButton(MenuPage landingPage, out SmallButton button)
         {
-            button = JumpToRVTButton;
+            button = Instance.JumpToRVTButton;
             return true;
         }
 
-        private void ConstructMenu(MenuPage landingPage)
+        private static void ConstructMenu(MenuPage landingPage) => Instance = new(landingPage);
+
+        private Menu(MenuPage landingPage)
         {
             rvtPage = new MenuPage(Localize("RandoVanillaTracker"), landingPage);
             rvtPageTitle = new MenuLabel(rvtPage, "Select vanilla placements to track", MenuLabel.Style.Title);

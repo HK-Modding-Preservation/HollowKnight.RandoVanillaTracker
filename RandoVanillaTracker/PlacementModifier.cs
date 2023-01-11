@@ -69,8 +69,7 @@ namespace RandoVanillaTracker
             {
                 if (Data.IsTransition(vd.Item) && Data.IsTransition(vd.Location))
                 {
-                    //rb.RemoveFromVanilla(vd);
-                    RemoveFromVanilla(rb, vd);
+                    rb.RemoveFromVanilla(vd);
                     vb.VanillaTransitions.Add(vd);
                 }
             }
@@ -89,8 +88,7 @@ namespace RandoVanillaTracker
                         if (rb.Vanilla.TryGetValue(vd.Location, out List<VanillaDef> defs))
                         {
                             int count = defs.Count(x => x == vd);
-                            //rb.RemoveFromVanilla(vd);
-                            RemoveFromVanilla(rb, vd);
+                            rb.RemoveFromVanilla(vd);
 
                             for (int i = 0; i < count; i++)
                             {
@@ -156,24 +154,8 @@ namespace RandoVanillaTracker
                 // Undo that behaviour here.
                 foreach (VanillaDef vd in pool.Vanilla)
                 {
-                    // TODO - this will only work when the RemoveFromVanilla(VanillaDef) function is fixed in Randomizer
-                    //rb.RemoveFromVanilla(vd);
-
-                    // Temporary fixed version of RemoveFromVanilla
-                    RemoveFromVanilla(rb, vd);
+                    rb.RemoveFromVanilla(vd);
                 }
-            }
-        }
-
-        private static void RemoveFromVanilla(RequestBuilder rb, VanillaDef vd)
-        {
-            if (rb.Vanilla.TryGetValue(vd.Location, out List<VanillaDef> defs))
-            {
-                //foreach (VanillaDef def2 in defs)
-                //{
-                //    if (def2.Equals(vd)) RVT.Instance.Log($"RFV: {def2}");
-                //}
-                defs.RemoveAll(def => def.Equals(vd));
             }
         }
     }

@@ -112,8 +112,10 @@ namespace RandoVanillaTracker
                     Items = new[] { item },
                     Locations = new[] { location },
                     Label = $"{label}-{++count}",
-                    Strategy = strategy ?? factory.gs.ProgressionDepthSettings.GetItemPlacementStrategy(),
+                    Strategy = new DefaultGroupPlacementStrategy(1f),
                 };
+
+                //RandoVanillaTracker.Instance.LogDebug($"Creating new group: {location} at {item} with label {group.Label}");
 
                 groups.Add(group);
             }
@@ -125,7 +127,7 @@ namespace RandoVanillaTracker
                     Items = new[] { factory.MakeTransition(vd.Item) },
                     Locations = new[] { factory.MakeTransition(vd.Location) },
                     Label = $"{label}-{++count}",
-                    Strategy = strategy ?? factory.gs.ProgressionDepthSettings.GetTransitionPlacementStrategy(),
+                    Strategy = new DefaultGroupPlacementStrategy(1f),
                 };
 
                 groups.Add(group);

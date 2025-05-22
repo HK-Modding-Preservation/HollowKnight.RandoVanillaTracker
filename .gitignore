@@ -3,9 +3,6 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
-# Local build properties
-LocalBuildProperties.props
-
 # User-specific files
 *.rsuser
 *.suo
@@ -364,3 +361,12 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# MSBuild Local Overrides
+*/LocalOverrides.targets
+
+# .DS_Store
+*.DS_Store
+
+# vscode
+.vscode/tasks.json
